@@ -2,11 +2,15 @@ package lk.ijse.spring.config;
 
 import jakarta.persistence.EntityManagerFactory;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
@@ -18,44 +22,45 @@ import javax.sql.DataSource;
 @Configuration
 @EnableJpaRepositories(basePackages = "lk.ijse.spring.repo")
 @EnableTransactionManagement
+@PropertySource("classpath:application.properties")
 public class JPAConfig {
+
+    @Autowired
+    private Environment env;
+
+    @Bean
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource ds, JpaVendorAdapter va) {
+        LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
+        factoryBean.setPackagesToScan(env.getRequiredProperty("spring.entity"));
+        factoryBean.setDataSource(ds);
+        factoryBean.setJpaVendorAdapter(va);
+        return factoryBean;
+    }
 
     @Bean
     public DataSource dataSource() {
+        DriverManagerDataSource ds = new DriverManagerDataSource();
+        ds.setDriverClassName(env.getRequiredProperty("spring.datasource.driverClassName"));
+        ds.setUrl(env.getRequiredProperty("spring.datasource.url"));
+        ds.setUsername(env.getRequiredProperty("spring.datasource.username"));
+        ds.setPassword(env.getRequiredProperty("spring.datasource.password"));
+        return ds;
+    }
 
-        DriverManagerDataSource dmds = new DriverManagerDataSource();
-        dmds.setUrl("jdbc:mysql://localhost:3306/spring_web_POS_db?createDatabaseIfNotExist=true");
-        dmds.setUsername("root");
-        dmds.setPassword("1234");
-        dmds.setDriverClassName("com.mysql.cj.jdbc.Driver");
 
-        return dmds;
-            /*EmbeddedDatabaseBuilder builder = new EmbeddedDatabaseBuilder();
-            return builder.setType(EmbeddedDatabaseType.HSQL).build();*/
+    @Bean
+    public JpaVendorAdapter jpaVendorAdapter() {
+        HibernateJpaVendorAdapter va = new HibernateJpaVendorAdapter();
+        va.setDatabasePlatform(env.getRequiredProperty("spring.jpa.hibernate.dialect"));
+        va.setDatabase(Database.MYSQL);
+        va.setGenerateDdl(true);
+        va.setShowSql(true);
+        return va;
     }
 
     @Bean
-    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
-
-        HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
-        vendorAdapter.setGenerateDdl(true);
-        vendorAdapter.setShowSql(true);
-        vendorAdapter.setDatabase(Database.MYSQL);
-        vendorAdapter.setDatabasePlatform("org.hibernate.dialect.MySQL8Dialect");
-
-        LocalContainerEntityManagerFactoryBean factory = new LocalContainerEntityManagerFactoryBean();
-        factory.setJpaVendorAdapter(vendorAdapter);
-        factory.setPackagesToScan("lk.ijse.spring.entity");
-        factory.setDataSource(dataSource);
-        return factory;
-    }
-
-    @Bean
-    public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
-
-        JpaTransactionManager txManager = new JpaTransactionManager();
-        txManager.setEntityManagerFactory(entityManagerFactory);
-        return txManager;
+    public PlatformTransactionManager transactionManager(EntityManagerFactory emf) {
+        return new JpaTransactionManager(emf);
     }
 
     @Bean

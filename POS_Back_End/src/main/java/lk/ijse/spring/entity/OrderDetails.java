@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@IdClass(OrderItem.class)
+@IdClass(OrderItem_PK.class)
 public class OrderDetails {
     @Id
     private String oid;

@@ -36,13 +36,14 @@ public class PlaceOrderServiceImpl implements PlaceOrderService {
 
     @Override
     public void placeOrder(OrderDTO dto) {
-        Orders orders = mapper.map(dto, Orders.class);
-        if (repo.existsById(orders.getOid())){
-            throw new RuntimeException("Order" + orders.getOid() + " Already added.!");
+        Orders ord = mapper.map(dto, Orders.class);
+        if (repo.existsById(ord.getOid())) {
+            throw new RuntimeException("Order" + ord.getOid() + " Already added.!");
         }
-        repo.save(orders);
+        repo.save(ord);
 
-        for (OrderDetails od : orders.getOrderDetails()){
+
+        for (OrderDetails od : ord.getOrderDetails()) {
             Item item = itemRepo.findById(od.getItemCode()).get();
             item.setQty(item.getQty() - od.getQty());
             itemRepo.save(item);

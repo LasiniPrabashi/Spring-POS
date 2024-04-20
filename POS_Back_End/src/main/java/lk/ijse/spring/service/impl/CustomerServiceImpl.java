@@ -64,6 +64,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public CustomDTO customerIdGenerate() {
+
         return new CustomDTO(repo.getLastIndex());
     }
 
